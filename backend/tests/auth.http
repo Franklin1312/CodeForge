@@ -1,0 +1,75 @@
+### CodeForge Auth API — Manual test file
+### Use with VS Code REST Client extension or IntelliJ HTTP Client
+### Set @token after login/register response
+
+@baseUrl = http://localhost:3000/api
+@token = PASTE_ACCESS_TOKEN_HERE
+
+### ── Register ────────────────────────────────────────────────────
+
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "devuser",
+  "email": "dev@example.com",
+  "password": "DevPass1"
+}
+
+### ── Login ───────────────────────────────────────────────────────
+
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "dev@example.com",
+  "password": "DevPass1"
+}
+
+### ── Get current user ────────────────────────────────────────────
+
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+
+### ── Refresh token ───────────────────────────────────────────────
+### (Cookie is sent automatically by REST client if using same session)
+
+POST {{baseUrl}}/auth/refresh
+
+### ── Logout ──────────────────────────────────────────────────────
+
+DELETE {{baseUrl}}/auth/logout
+Authorization: Bearer {{token}}
+
+### ── Logout all devices ──────────────────────────────────────────
+
+DELETE {{baseUrl}}/auth/logout-all
+Authorization: Bearer {{token}}
+
+### ── Health check ────────────────────────────────────────────────
+
+GET {{baseUrl}}/health
+
+### ── Error cases ─────────────────────────────────────────────────
+
+### Weak password (should return 400)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "weakuser",
+  "email": "weak@example.com",
+  "password": "password"
+}
+
+### Wrong credentials (should return 401)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "dev@example.com",
+  "password": "WrongPassword1"
+}
+
+### Missing auth header (should return 401)
+GET {{baseUrl}}/auth/me

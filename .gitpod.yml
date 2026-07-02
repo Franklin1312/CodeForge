@@ -1,0 +1,65 @@
+# CodeForge OJ — Gitpod configuration
+# Opens a ready-to-code workspace with MongoDB + Redis running
+
+image:
+  file: .gitpod.Dockerfile
+
+tasks:
+  - name: Infrastructure (MongoDB + Redis)
+    init: |
+      docker-compose pull
+    command: |
+      docker-compose up -d mongo redis
+      echo "⏳ Waiting for MongoDB..."
+      until docker exec codeforge_mongo mongosh --quiet --eval "db.runCommand('ping').ok" 2>/dev/null | grep -q 1; do sleep 2; done
+      echo "✅ MongoDB ready"
+      echo "⏳ Waiting for Redis..."
+      until docker exec codeforge_redis redis-cli ping 2>/dev/null | grep -q PONG; do sleep 1; done
+      echo "✅ Redis ready"
+
+  - name: Backend
+    init: |
+      cd backend && npm install
+    command: |
+      cd backend
+      if [ ! -f ../.env ]; then
+        cp ../.env.example ../.env
+        echo "⚠️  Created .env from example — add your secrets!"
+      fi
+      npm run dev
+    openMode: split-left
+
+  - name: Frontend
+    init: |
+      cd frontend && npm install
+    command: |
+      cd frontend && npm run dev
+    openMode: split-right
+
+ports:
+  - port: 3000
+    name: Backend API
+    description: Express API server
+    visibility: private
+  - port: 5173
+    name: Frontend
+    description: Vite dev server
+    onOpen: open-preview
+  - port: 27017
+    name: MongoDB
+    visibility: private
+  - port: 6379
+    name: Redis
+    visibility: private
+  - port: 8081
+    name: Mongo Express
+    description: MongoDB UI
+    visibility: private
+
+vscode:
+  extensions:
+    - dbaeumer.vscode-eslint
+    - esbenp.prettier-vscode
+    - ms-vscode.vscode-json
+    - mongodb.mongodb-vscode
+    - humao.rest-client

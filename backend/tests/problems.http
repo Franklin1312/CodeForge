@@ -1,0 +1,92 @@
+### CodeForge Problems API — Manual test file
+### Run seed first: node scripts/seed.js
+### Then login and paste the accessToken below
+
+@baseUrl = http://localhost:3000/api
+@token = PASTE_ACCESS_TOKEN_HERE
+
+### ── 1. List all problems ─────────────────────────────────────────
+
+GET {{baseUrl}}/problems
+Accept: application/json
+
+### ── 2. List with filters ────────────────────────────────────────
+
+GET {{baseUrl}}/problems?difficulty=easy&page=1&limit=10
+Accept: application/json
+
+### ── 3. Search ───────────────────────────────────────────────────
+
+GET {{baseUrl}}/problems?search=two+sum
+Accept: application/json
+
+### ── 4. Filter by tags ───────────────────────────────────────────
+
+GET {{baseUrl}}/problems?tags=array,hash-table
+Accept: application/json
+
+### ── 5. Get all tags ─────────────────────────────────────────────
+
+GET {{baseUrl}}/problems/tags
+Accept: application/json
+
+### ── 6. Get single problem ──────────────────────────────────────
+
+GET {{baseUrl}}/problems/two-sum
+Accept: application/json
+
+### ── 7. Create problem (admin only) ─────────────────────────────
+
+POST {{baseUrl}}/problems
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Reverse String",
+  "difficulty": "easy",
+  "description": "Write a function that reverses a string. The input string is given as an array of characters `s`.\n\nYou must do this by modifying the input array in-place with O(1) extra memory.",
+  "constraints": "- 1 ≤ s.length ≤ 10^5\n- s[i] is a printable ASCII character.",
+  "tags": ["two-pointers", "string"],
+  "timeLimit": 1000,
+  "memoryLimit": 128,
+  "allowedLanguages": ["python", "javascript", "java", "cpp"],
+  "examples": [
+    { "input": "s = [\"h\",\"e\",\"l\",\"l\",\"o\"]", "output": "[\"o\",\"l\",\"l\",\"e\",\"h\"]" },
+    { "input": "s = [\"H\",\"a\",\"n\",\"n\",\"a\",\"h\"]", "output": "[\"h\",\"a\",\"n\",\"n\",\"a\",\"H\"]" }
+  ],
+  "testCases": [
+    { "input": "hello", "expectedOutput": "olleh", "isHidden": false },
+    { "input": "Hannah", "expectedOutput": "hannaH", "isHidden": true }
+  ],
+  "isPublished": false
+}
+
+### ── 8. Update problem (replace :id) ────────────────────────────
+
+PATCH {{baseUrl}}/problems/PROBLEM_ID_HERE
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "timeLimit": 2000,
+  "tags": ["two-pointers", "string", "array"]
+}
+
+### ── 9. Toggle publish (replace :id) ────────────────────────────
+
+PATCH {{baseUrl}}/problems/PROBLEM_ID_HERE/publish
+Authorization: Bearer {{token}}
+
+### ── 10. Delete problem (replace :id) ───────────────────────────
+
+DELETE {{baseUrl}}/problems/PROBLEM_ID_HERE
+Authorization: Bearer {{token}}
+
+### ── 11. Get full problem as admin (replace :id) ─────────────────
+
+GET {{baseUrl}}/problems/PROBLEM_ID_HERE/admin
+Authorization: Bearer {{token}}
+
+### ── 12. Health check ────────────────────────────────────────────
+
+GET {{baseUrl}}/health
