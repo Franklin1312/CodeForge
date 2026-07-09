@@ -42,3 +42,25 @@ router.get("/", async (req, res) => {
 });
 
 export default router;
+
+
+// GET /api/health/judge
+// Returns Docker availability + image pull status
+import { getImageStatusSummary, isDockerAvailable } from "../workers/imageManager.js";
+
+router.get("/judge", async (req, res) => {
+  const [dockerOk, images] = await Promise.all([
+    isDockerAvailable(),
+    Promise.resolve(getImageStatusSummary()),
+  ]);
+
+  const allReady = Object.values(images).every((s) => s === "ready");
+  const mode = process.env.JUDGE_MOCK === "true" ? "mock" : dockerOk ? "docker" : "mock-fallback";
+
+  res.json({
+    mode,
+    dockerAvailable: dockerOk,
+    images,
+    allImagesReady: allReady,
+  });
+});
