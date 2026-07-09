@@ -14,8 +14,8 @@ import { notFound } from "./middleware/notFound.js";
 import healthRouter from "./routes/health.js";
 import authRouter from "./routes/auth.js";
 import problemsRouter from "./routes/problems.js";
-// Stage 5: import submissionsRouter from "./routes/submissions.js";
-// Stage 7: import aiRouter from "./routes/ai.js";
+import submissionsRouter from "./routes/submissions.js";
+import aiRouter from "./routes/ai.js";
 
 const app = express();
 
@@ -72,8 +72,8 @@ app.use(
 app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/problems", problemsRouter);
-// app.use("/api/submissions", submissionsRouter); // Stage 5
-// app.use("/api/ai", aiRouter);             // Stage 7
+app.use("/api/submissions", submissionsRouter);
+app.use("/api/ai", aiRouter);
 
 // ─── Error handling ─────────────────────────────────────────────────
 app.use(notFound);

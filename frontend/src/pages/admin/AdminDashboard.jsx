@@ -6,6 +6,7 @@ const tiles = [
   { to: "/admin/problems",     icon: "📚", label: "Problems",    desc: "Create, edit, publish problems" },
   { to: "/admin/users",        icon: "👥", label: "Users",       desc: "Manage users and roles" },
   { to: "/problems",           icon: "🌐", label: "View Site",   desc: "See the public problem list" },
+  { to: "/admin/judge",        icon: "🐳", label: "Judge Status", desc: "Docker images and execution mode" },
 ];
 
 export default function AdminDashboard() {

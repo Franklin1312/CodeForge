@@ -6,6 +6,7 @@ import { Button } from "../ui/index.jsx";
 
 const navLinks = [
   { to: "/problems", label: "Problems" },
+    { to: "/ai-coach", label: "AI Coach" },
   { to: "/leaderboard", label: "Leaderboard" },
 ];
 

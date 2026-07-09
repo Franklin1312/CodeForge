@@ -1,0 +1,70 @@
+### CodeForge Submissions API — Manual test file
+### 1. Login first (auth.http) and paste token below
+### 2. Run seed: node scripts/seed.js to get problem IDs
+
+@baseUrl = http://localhost:3000/api
+@token = PASTE_ACCESS_TOKEN_HERE
+@problemId = PASTE_PROBLEM_ID_HERE
+
+### ── 1. Submit code (Python - Accepted) ─────────────────────────
+
+POST {{baseUrl}}/submissions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "problemId": "{{problemId}}",
+  "language": "python",
+  "code": "def two_sum(nums, target):\n    seen = {}\n    for i, n in enumerate(nums):\n        if target - n in seen:\n            return [seen[target - n], i]\n        seen[n] = i\n"
+}
+
+### ── 2. Submit code (Python - Wrong Answer) ─────────────────────
+
+POST {{baseUrl}}/submissions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "problemId": "{{problemId}}",
+  "language": "python",
+  "code": "def two_sum(nums, target):\n    return [0, 1]  # always wrong\n"
+}
+
+### ── 3. Submit code (Python - Compile Error) ────────────────────
+
+POST {{baseUrl}}/submissions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "problemId": "{{problemId}}",
+  "language": "python",
+  "code": "def two_sum(nums, target)\n    syntax error here\n"
+}
+
+### ── 4. Get submission by ID ────────────────────────────────────
+
+GET {{baseUrl}}/submissions/SUBMISSION_ID_HERE
+Authorization: Bearer {{token}}
+
+### ── 5. Get my submissions (all problems) ───────────────────────
+
+GET {{baseUrl}}/submissions/me
+Authorization: Bearer {{token}}
+
+### ── 6. Get my submissions for specific problem ─────────────────
+
+GET {{baseUrl}}/submissions/me?problemId={{problemId}}&page=1&limit=10
+Authorization: Bearer {{token}}
+
+### ── 7. Submit JavaScript ───────────────────────────────────────
+
+POST {{baseUrl}}/submissions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "problemId": "{{problemId}}",
+  "language": "javascript",
+  "code": "function twoSum(nums, target) {\n  const map = new Map();\n  for (let i = 0; i < nums.length; i++) {\n    const comp = target - nums[i];\n    if (map.has(comp)) return [map.get(comp), i];\n    map.set(nums[i], i);\n  }\n};\n"
+}
