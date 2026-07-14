@@ -1,4 +1,4 @@
-import api from "./client.js";
+import api, { refreshSession } from "./client.js";
 
 // All auth calls go through the shared Axios instance which:
 //   - Attaches the Bearer token on every request
@@ -32,8 +32,7 @@ export const authApi = {
    * @returns {{ user, accessToken }}
    */
   refresh: async () => {
-    const res = await api.post("/auth/refresh");
-    return res.data;
+    return refreshSession();
   },
 
   /**

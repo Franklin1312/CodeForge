@@ -11,6 +11,7 @@ import { AppError, BadRequest, Unauthorized, Conflict } from "../middleware/erro
 import logger from "../utils/logger.js";
 
 const REFRESH_TOKEN_TTL_DAYS = parseInt(process.env.JWT_REFRESH_EXPIRES) || 7;
+const REFRESH_REUSE_GRACE_MS = 5000;
 
 // ─── Helpers ──────────────────────────────────────────────────────
 function refreshTokenExpiry() {
@@ -134,7 +135,19 @@ export async function refresh(rawToken, req) {
 
   if (!tokenRecord) throw Unauthorized("Invalid refresh token");
   if (tokenRecord.isUsed) {
-    // Token reuse detected — possible token theft, revoke all for this user
+    // Concurrent refreshes from the same browser session can race with token rotation.
+    // Treat a very recent same-device replay as a stale request, not an attack.
+    const userAgent = req.headers["user-agent"] || "unknown";
+    const ipAddress = req.ip || req.connection?.remoteAddress || "unknown";
+    const currentDeviceId = deriveDeviceId(userAgent, ipAddress);
+    const usedAtMs = tokenRecord.usedAt ? new Date(tokenRecord.usedAt).getTime() : 0;
+    const justUsed = Date.now() - usedAtMs <= REFRESH_REUSE_GRACE_MS;
+
+    if (justUsed && tokenRecord.deviceId === currentDeviceId) {
+      throw Unauthorized("Refresh token already rotated");
+    }
+
+    // Token reuse detected outside race window — possible token theft, revoke all sessions.
     logger.warn(`Refresh token reuse detected for userId: ${tokenRecord.userId}`);
     await RefreshToken.revokeAllForUser(tokenRecord.userId);
     throw Unauthorized("Refresh token reuse detected — all sessions revoked");

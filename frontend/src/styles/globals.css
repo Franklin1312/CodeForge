@@ -1,124 +1,186 @@
-/* ─── CodeForge Design Tokens ─────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════
+   CodeForge OJ — Design System
+   Signature: the judge's ink stamp. Verdicts are the emotional
+   climax of this product, so the one designed flourish is a
+   rotated, double-bordered stamp treatment reserved for verdicts.
+   Everything else stays quiet and disciplined around it.
+   ══════════════════════════════════════════════════════════════ */
+
 :root {
-  /* Brand palette */
-  --color-brand:       #00d4ff;
-  --color-brand-dim:   #0099bb;
-  --color-green:       #00e676;
-  --color-orange:      #ff6d00;
-  --color-purple:      #9c27b0;
-  --color-red:         #ff1744;
+  /* ── Surfaces (warm-neutral ink, not pure black) ────────────── */
+  --ink:           #0A0C10;
+  --surface-0:     #0A0C10;
+  --surface-1:     #13161D;
+  --surface-2:     #1C202A;
+  --surface-3:     #262B37;
+  --border:        #262C38;
+  --border-strong: #3A4152;
 
-  /* Surfaces */
-  --surface-base:      #0f1117;
-  --surface-1:         #1a1f2e;
-  --surface-2:         #242938;
-  --surface-3:         #2d3347;
-  --surface-border:    #3a4259;
+  /* ── Text ────────────────────────────────────────────────────── */
+  --text-primary:   #EDEFF2;
+  --text-secondary: #9AA2B1;
+  --text-muted:     #5A6270;
 
-  /* Text */
-  --text-primary:      #e2e8f0;
-  --text-secondary:    #94a3b8;
-  --text-muted:        #64748b;
-  --text-accent:       #00d4ff;
+  /* ── Brand: seal-gold, the official-stamp accent ────────────── */
+  --brand:       #E8A94A;
+  --brand-dim:   #B9822F;
+  --brand-tint:  rgba(232, 169, 74, 0.12);
+  --brand-ink:   #1C1509;   /* text-on-brand */
 
-  /* Spacing */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
+  /* ── Verdict palette (semantic — never reused for UI chrome) ── */
+  --v-ac:  #3FB950;   /* Accepted */
+  --v-wa:  #F0605A;   /* Wrong Answer */
+  --v-re:  #FF7B72;   /* Runtime Error */
+  --v-tle: #A371F7;   /* Time Limit Exceeded */
+  --v-mle: #A371F7;   /* Memory Limit Exceeded */
+  --v-ce:  #E0975C;   /* Compile Error */
+  --v-se:  #6B7280;   /* System Error */
+  --v-pending: #5A6270;
+  --v-running: var(--brand);
 
-  /* Border radius */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  /* ── Type ────────────────────────────────────────────────────── */
+  --font-display: "IBM Plex Mono", "JetBrains Mono", monospace;
+  --font-sans:    "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --font-mono:    "IBM Plex Mono", "Fira Code", monospace;
+
+  /* ── Radius / spacing ────────────────────────────────────────── */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
   --radius-full: 9999px;
 
-  /* Typography */
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+  /* ── Shadow ──────────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.5);
+  --shadow-md: 0 8px 24px rgba(0,0,0,0.45);
+  --shadow-glow-brand: 0 0 0 1px rgba(232,169,74,0.25), 0 4px 20px rgba(232,169,74,0.08);
 
-  /* Transitions */
-  --transition-fast: 150ms ease;
-  --transition-base: 250ms ease;
-
-  /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.6);
+  /* ── Legacy aliases (Stage 1–7 pages reference these names) ───
+     Keeps every existing page consistent with the new palette
+     without needing a per-file rewrite. ─────────────────────── */
+  --surface-border: var(--border);
+  --surface-base:   var(--ink);
+  --color-brand:      var(--brand);
+  --color-brand-dim:  var(--brand-dim);
+  --color-green:  var(--v-ac);
+  --color-red:    var(--v-wa);
+  --color-orange: var(--v-ce);
+  --color-purple: var(--v-tle);
+  --text-accent:  var(--brand);
+  --shadow-lg: var(--shadow-md);
 }
 
-/* ─── Reset ───────────────────────────────────────────────────── */
+/* ── Reset ─────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-html {
-  font-size: 16px;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  scroll-behavior: smooth;
-}
+html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; scroll-behavior: smooth; }
 
 body {
-  background-color: var(--surface-base);
+  background: var(--ink);
   color: var(--text-primary);
   font-family: var(--font-sans);
   line-height: 1.6;
   min-height: 100vh;
+  /* Faint scanline texture — CRT/terminal echo, kept subtle */
+  background-image:
+    repeating-linear-gradient(180deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px),
+    radial-gradient(ellipse 1200px 600px at 50% -10%, rgba(232,169,74,0.05), transparent 60%);
 }
 
-a {
-  color: var(--color-brand);
-  text-decoration: none;
-  transition: color var(--transition-fast);
-}
-a:hover { color: var(--color-brand-dim); }
+a { color: var(--brand); text-decoration: none; transition: color 150ms ease; }
+a:hover { color: #F3C579; }
 
-code, pre {
-  font-family: var(--font-mono);
-  font-size: 0.875em;
-}
+code, pre { font-family: var(--font-mono); font-size: 0.875em; }
 
-/* ─── Scrollbar ───────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.01em; }
+
+/* ── Scrollbar ─────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 7px; height: 7px; }
 ::-webkit-scrollbar-track { background: var(--surface-1); }
-::-webkit-scrollbar-thumb { background: var(--surface-border); border-radius: var(--radius-full); }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: var(--radius-full); }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-/* ─── Focus ring ─────────────────────────────────────────────── */
-:focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
+/* ── Focus ring — always visible, never suppressed ──────────────── */
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: var(--radius-sm); }
 
-/* ─── Utility classes ────────────────────────────────────────── */
-.sr-only {
-  position: absolute;
-  width: 1px; height: 1px;
-  padding: 0; margin: -1px;
-  overflow: hidden;
-  clip: rect(0,0,0,0);
-  white-space: nowrap;
-  border: 0;
-}
+/* ── Utility ───────────────────────────────────────────────────── */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.container { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
+.mono { font-family: var(--font-mono); }
 
-.container {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 0 var(--space-6);
-}
+/* ── Difficulty badges (reuse verdict hues: easy≈AC, hard≈WA) ───── */
+.badge { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: var(--radius-full); font-size: 0.75rem; font-weight: 600; font-family: var(--font-mono); letter-spacing: 0.02em; }
+.badge-easy   { background: rgba(63,185,80,0.12);  color: var(--v-ac); }
+.badge-medium { background: rgba(232,169,74,0.12); color: var(--brand); }
+.badge-hard   { background: rgba(240,96,90,0.12);  color: var(--v-wa); }
 
-.badge {
+/* ══════════════════════════════════════════════════════════════
+   THE VERDICT STAMP — signature element.
+   A rotated, double-bordered mono badge that "stamps" onto the
+   screen. Used ONLY for verdict reveals (hero demo + solve page).
+   ══════════════════════════════════════════════════════════════ */
+.verdict-stamp {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  font-size: 0.75rem;
-  font-weight: 500;
+  gap: 8px;
+  padding: 10px 20px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 3px solid currentColor;
+  border-radius: var(--radius-sm);
+  transform: rotate(-3deg);
+  position: relative;
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+.verdict-stamp::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border: 1px dashed currentColor;
+  border-radius: var(--radius-md);
+  opacity: 0.35;
+}
+.verdict-stamp.stamp-animate {
+  animation: stamp-down 420ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+@keyframes stamp-down {
+  0%   { transform: rotate(-3deg) scale(2.2); opacity: 0; filter: blur(2px); }
+  60%  { transform: rotate(-3deg) scale(0.94); opacity: 1; filter: blur(0); }
+  100% { transform: rotate(-3deg) scale(1); }
 }
 
-.badge-easy   { background: rgba(0,230,118,0.15); color: #00e676; }
-.badge-medium { background: rgba(255,109,0,0.15);  color: #ff6d00; }
-.badge-hard   { background: rgba(255,23,68,0.15);  color: #ff1744; }
+@media (prefers-reduced-motion: reduce) {
+  .verdict-stamp.stamp-animate { animation: none; }
+  * { scroll-behavior: auto !important; }
+}
+
+/* ── Terminal window chrome (hero + judge demo) ─────────────────── */
+.term-window {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+.term-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.term-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+.blink-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 1.1em;
+  background: var(--brand);
+  vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }

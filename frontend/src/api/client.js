@@ -12,6 +12,30 @@ export const api = axios.create({
   timeout: 15000,
 });
 
+// Shared bare client for refresh endpoint calls.
+// It has no auth interceptors, which prevents refresh-on-refresh loops.
+const refreshClient = axios.create({
+  baseURL: BASE_URL,
+  withCredentials: true,
+  headers: { "Content-Type": "application/json" },
+  timeout: 15000,
+});
+
+let refreshSessionPromise = null;
+
+export async function refreshSession() {
+  if (!refreshSessionPromise) {
+    refreshSessionPromise = refreshClient
+      .post("/auth/refresh")
+      .then((res) => res.data)
+      .finally(() => {
+        refreshSessionPromise = null;
+      });
+  }
+
+  return refreshSessionPromise;
+}
+
 // ─── Request interceptor — attach access token ────────────────────
 api.interceptors.request.use(
   (config) => {
@@ -25,59 +49,36 @@ api.interceptors.request.use(
 );
 
 // ─── Response interceptor — silent token refresh ──────────────────
-let isRefreshing = false;
-let refreshQueue = [];
 
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const requestUrl = originalRequest?.url || "";
+    const isRefreshRequest = requestUrl.includes("/auth/refresh");
 
     // If 401 and we haven't retried yet
     if (
       error.response?.status === 401 &&
+      !isRefreshRequest &&
       !originalRequest._retry &&
       error.response?.data?.error?.code !== "INVALID_CREDENTIALS"
     ) {
-      if (isRefreshing) {
-        // Queue this request until the refresh completes
-        return new Promise((resolve, reject) => {
-          refreshQueue.push({ resolve, reject });
-        }).then((token) => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return api(originalRequest);
-        });
-      }
-
       originalRequest._retry = true;
-      isRefreshing = true;
 
       try {
-        // POST /auth/refresh — sends httpOnly refresh cookie automatically
-        const { data } = await axios.post(
-          `${BASE_URL}/auth/refresh`,
-          {},
-          { withCredentials: true }
-        );
-
-        const newToken = data.accessToken;
+        const { accessToken: newToken } = await refreshSession();
         store.dispatch(refreshAccessToken({ accessToken: newToken }));
 
-        // Retry all queued requests with new token
-        refreshQueue.forEach((p) => p.resolve(newToken));
-        refreshQueue = [];
-
+        originalRequest.headers = originalRequest.headers || {};
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed — log user out
-        refreshQueue.forEach((p) => p.reject(refreshError));
-        refreshQueue = [];
         store.dispatch(clearCredentials());
-        window.location.href = "/login";
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
         return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
       }
     }
 

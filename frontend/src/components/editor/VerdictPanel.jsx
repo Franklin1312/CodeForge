@@ -1,54 +1,44 @@
 import { useSelector } from "react-redux";
 import { selectActiveSubmission, selectActiveStatus } from "../../store/slices/submissionsSlice.js";
-import { Spinner } from "../ui/index.jsx";
+import { Spinner, VerdictStamp } from "../ui/index.jsx";
 
 const VERDICT_META = {
-  pending: { label: "Pending",              color: "var(--text-muted)",    icon: "⏳" },
-  running: { label: "Running…",             color: "var(--color-brand)",   icon: "⚙️" },
-  AC:      { label: "Accepted",             color: "var(--color-green)",   icon: "✅" },
-  WA:      { label: "Wrong Answer",         color: "var(--color-red)",     icon: "❌" },
-  TLE:     { label: "Time Limit Exceeded",  color: "var(--color-orange)",  icon: "⏱️" },
-  MLE:     { label: "Memory Limit Exceeded",color: "var(--color-orange)",  icon: "💾" },
-  RE:      { label: "Runtime Error",        color: "var(--color-red)",     icon: "💥" },
-  CE:      { label: "Compile Error",        color: "var(--color-orange)",  icon: "🔧" },
-  SE:      { label: "System Error",         color: "var(--text-muted)",    icon: "⚠️" },
+  pending: { color: "var(--v-pending)", icon: "○", label: "Pending" },
+  running: { color: "var(--v-running)", icon: "◐", label: "Judging" },
+  AC:      { color: "var(--v-ac)",  icon: "✓", label: "Accepted" },
+  WA:      { color: "var(--v-wa)",  icon: "✕", label: "Wrong Answer" },
+  TLE:     { color: "var(--v-tle)", icon: "⏱", label: "Time Limit" },
+  MLE:     { color: "var(--v-mle)", icon: "▣", label: "Memory Limit" },
+  RE:      { color: "var(--v-re)",  icon: "!", label: "Runtime Error" },
+  CE:      { color: "var(--v-ce)",  icon: "⚠", label: "Compile Error" },
+  SE:      { color: "var(--v-se)",  icon: "?", label: "System Error" },
 };
 
 function TestCaseRow({ result, index }) {
   const meta = VERDICT_META[result.verdict] || VERDICT_META.SE;
   return (
-    <div style={{
-      border: "1px solid var(--surface-border)", borderRadius: "8px",
-      overflow: "hidden", marginBottom: "8px",
-    }}>
+    <div style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", overflow: "hidden", marginBottom: "8px" }}>
       <div style={{
         display: "flex", justifyContent: "space-between", alignItems: "center",
         padding: "8px 14px",
-        background: result.verdict === "AC" ? "rgba(0,230,118,0.06)" : "rgba(255,23,68,0.06)",
+        background: result.verdict === "AC" ? "rgba(63,185,80,0.06)" : "rgba(240,96,90,0.06)",
       }}>
-        <span style={{ fontSize: "13px", fontWeight: 600, color: meta.color }}>
+        <span style={{ fontSize: "13px", fontWeight: 600, color: meta.color, fontFamily: "var(--font-mono)" }}>
           {meta.icon} Test {index + 1}
           {result.isHidden && <span style={{ marginLeft: "8px", fontSize: "11px", color: "var(--text-muted)", fontWeight: 400 }}>hidden</span>}
         </span>
-        <div style={{ display: "flex", gap: "16px", fontSize: "12px", color: "var(--text-muted)" }}>
-          {result.runtime != null && <span>⚡ {result.runtime}ms</span>}
-          {result.memory  != null && <span>📦 {(result.memory / 1024).toFixed(1)}MB</span>}
+        <div style={{ display: "flex", gap: "14px", fontSize: "12px", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+          {result.runtime != null && <span>{result.runtime}ms</span>}
+          {result.memory  != null && <span>{(result.memory / 1024).toFixed(1)}MB</span>}
           <span style={{ color: meta.color, fontWeight: 600 }}>{meta.label}</span>
         </div>
       </div>
 
-      {/* Show input/expected/actual for non-hidden WA */}
       {!result.isHidden && result.verdict === "WA" && (
         <div style={{ padding: "12px 14px", display: "grid", gap: "8px", background: "var(--surface-1)" }}>
-          {result.input != null && (
-            <IORow label="Input"    value={result.input}    color="var(--text-secondary)" />
-          )}
-          {result.expected != null && (
-            <IORow label="Expected" value={result.expected} color="var(--color-green)" />
-          )}
-          {result.actual != null && (
-            <IORow label="Got"      value={result.actual}   color="var(--color-red)" />
-          )}
+          {result.input    != null && <IORow label="Input"    value={result.input}    color="var(--text-secondary)" />}
+          {result.expected != null && <IORow label="Expected" value={result.expected} color="var(--v-ac)" />}
+          {result.actual   != null && <IORow label="Got"      value={result.actual}   color="var(--v-wa)" />}
         </div>
       )}
     </div>
@@ -58,8 +48,8 @@ function TestCaseRow({ result, index }) {
 function IORow({ label, value, color }) {
   return (
     <div>
-      <span style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</span>
-      <pre style={{ margin: "4px 0 0", fontFamily: "var(--font-mono)", fontSize: "12px", color, background: "var(--surface-2)", padding: "6px 10px", borderRadius: "6px", overflowX: "auto", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+      <span style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "var(--font-mono)" }}>{label}</span>
+      <pre style={{ margin: "4px 0 0", fontFamily: "var(--font-mono)", fontSize: "12px", color, background: "var(--surface-2)", padding: "6px 10px", borderRadius: "var(--radius-sm)", overflowX: "auto", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
         {value || "(empty)"}
       </pre>
     </div>
@@ -75,8 +65,8 @@ export default function VerdictPanel({ submissionId }) {
   if (status === "loading") {
     return (
       <div style={panelStyle}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "var(--text-muted)" }}>
-          <Spinner size={18} /> Submitting…
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "var(--text-muted)", fontFamily: "var(--font-mono)", fontSize: "13px" }}>
+          <Spinner size={18} /> submitting...
         </div>
       </div>
     );
@@ -84,63 +74,56 @@ export default function VerdictPanel({ submissionId }) {
 
   if (!submission) return null;
 
-  const verdict = submission.verdict || "pending";
-  const meta    = VERDICT_META[verdict] || VERDICT_META.pending;
+  const verdict  = submission.verdict || "pending";
+  const meta     = VERDICT_META[verdict] || VERDICT_META.pending;
   const isActive = verdict === "pending" || verdict === "running";
+  const isFinal  = !isActive;
 
   return (
     <div style={panelStyle}>
-      {/* Overall verdict badge */}
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        marginBottom: "16px", flexWrap: "wrap", gap: "8px",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          {isActive && <Spinner size={18} color={meta.color} />}
-          <span style={{ fontSize: "20px", fontWeight: 700, color: meta.color }}>
-            {meta.icon} {meta.label}
-          </span>
-        </div>
-        {!isActive && submission.runtime != null && (
-          <div style={{ display: "flex", gap: "16px", fontSize: "13px", color: "var(--text-muted)" }}>
-            <span>⚡ {submission.runtime}ms</span>
-            {submission.memory != null && <span>📦 {(submission.memory / 1024).toFixed(1)}MB</span>}
+      {/* Overall verdict — the signature stamp for final results */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "18px", flexWrap: "wrap", gap: "10px" }}>
+        {isFinal ? (
+          <VerdictStamp verdict={verdict} animate />
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <Spinner size={18} color={meta.color} />
+            <span style={{ fontSize: "15px", fontWeight: 600, color: meta.color, fontFamily: "var(--font-mono)" }}>
+              {meta.label}...
+            </span>
+          </div>
+        )}
+        {isFinal && submission.runtime != null && (
+          <div style={{ display: "flex", gap: "16px", fontSize: "13px", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
+            <span>{submission.runtime}ms</span>
+            {submission.memory != null && <span>{(submission.memory / 1024).toFixed(1)}MB</span>}
           </div>
         )}
       </div>
 
-      {/* Compile error */}
       {verdict === "CE" && submission.compileError && (
         <div style={{ marginBottom: "16px" }}>
-          <div style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Compile Error</div>
-          <pre style={{ fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--color-orange)", background: "var(--surface-2)", padding: "12px", borderRadius: "8px", overflowX: "auto", whiteSpace: "pre-wrap" }}>
+          <div style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "var(--font-mono)" }}>Compile Error</div>
+          <pre style={{ fontFamily: "var(--font-mono)", fontSize: "12px", color: "var(--v-ce)", background: "var(--surface-2)", padding: "12px", borderRadius: "var(--radius-sm)", overflowX: "auto", whiteSpace: "pre-wrap" }}>
             {submission.compileError}
           </pre>
         </div>
       )}
 
-      {/* Test case results */}
       {submission.testResults?.length > 0 && (
         <div>
-          <div style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Test Results
-            {" "}
-            <span style={{ color: "var(--color-green)" }}>
-              {submission.testResults.filter((r) => r.verdict === "AC").length}
-            </span>
-            {" / "}
-            {submission.testResults.length} passed
+          <div style={{ fontSize: "12px", color: "var(--text-muted)", marginBottom: "10px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", fontFamily: "var(--font-mono)" }}>
+            Test Results{" "}
+            <span style={{ color: "var(--v-ac)" }}>{submission.testResults.filter((r) => r.verdict === "AC").length}</span>
+            {" / "}{submission.testResults.length} passed
           </div>
-          {submission.testResults.map((r, i) => (
-            <TestCaseRow key={i} result={r} index={i} />
-          ))}
+          {submission.testResults.map((r, i) => <TestCaseRow key={i} result={r} index={i} />)}
         </div>
       )}
 
-      {/* Running placeholder */}
       {isActive && (
-        <div style={{ color: "var(--text-muted)", fontSize: "13px", marginTop: "8px" }}>
-          Waiting for judge…
+        <div style={{ color: "var(--text-muted)", fontSize: "13px", marginTop: "8px", fontFamily: "var(--font-mono)" }}>
+          waiting for judge...
         </div>
       )}
     </div>
@@ -149,7 +132,7 @@ export default function VerdictPanel({ submissionId }) {
 
 const panelStyle = {
   background: "var(--surface-1)",
-  border: "1px solid var(--surface-border)",
-  borderRadius: "12px",
+  border: "1px solid var(--border)",
+  borderRadius: "var(--radius-lg)",
   padding: "20px",
 };
