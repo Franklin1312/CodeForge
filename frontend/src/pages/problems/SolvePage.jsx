@@ -11,6 +11,10 @@ import {
   submitCode, clearActive,
   selectActiveSubmission, selectActiveStatus, selectSubmissionsError,
 } from "../../store/slices/submissionsSlice.js";
+import {
+  selectIsAuthenticated,
+  selectAuthLoading,
+} from "../../store/slices/authSlice.js";
 
 import { useSubmissionWebSocket } from "../../hooks/useWebSocket.js";
 import VerdictPanel     from "../../components/editor/VerdictPanel.jsx";
@@ -239,19 +243,26 @@ export default function SolvePage() {
 function SubmissionsTab({ problemId }) {
   const [items,   setItems]   = useState([]);
   const [loading, setLoading] = useState(true);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const authLoading = useSelector(selectAuthLoading);
   const COLORS = { AC:"var(--color-green)", WA:"var(--color-red)", TLE:"var(--color-orange)", MLE:"var(--color-orange)", RE:"var(--color-red)", CE:"var(--color-orange)", pending:"var(--text-muted)", running:"var(--color-brand)", SE:"var(--text-muted)" };
 
   useEffect(() => {
-    if (!problemId) return;
+    if (!problemId || authLoading || !isAuthenticated) {
+      setLoading(false);
+      return;
+    }
+
     import("../../api/submissions.js").then(({ default: api }) =>
       api.getMine({ problemId, limit:10 })
         .then((d) => setItems(d.submissions||[]))
         .catch(()=>{})
         .finally(()=>setLoading(false))
     );
-  }, [problemId]);
+  }, [problemId, authLoading, isAuthenticated]);
 
   if (loading) return <div style={{ textAlign:"center", padding:"40px 0" }}><Spinner size={24} color="var(--color-brand)" /></div>;
+  if (!isAuthenticated) return <p style={{ color:"var(--text-muted)", fontSize:"14px", textAlign:"center", marginTop:"40px" }}>Sign in to view your submissions.</p>;
   if (!items.length) return <p style={{ color:"var(--text-muted)", fontSize:"14px", textAlign:"center", marginTop:"40px" }}>No submissions yet.</p>;
 
   return (

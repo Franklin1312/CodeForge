@@ -128,7 +128,6 @@ const problemSchema = new mongoose.Schema(
 );
 
 // ─── Indexes ──────────────────────────────────────────────────────
-problemSchema.index({ slug: 1 }, { unique: true });
 problemSchema.index({ difficulty: 1 });
 problemSchema.index({ tags: 1 });
 problemSchema.index({ isPublished: 1 });

@@ -49,13 +49,13 @@ export function useAuth() {
 
   // ─── Login ──────────────────────────────────────────────────────
   const login = useCallback(
-    async (data) => {
+    async (data, options = {}) => {
       dispatch(setAuthLoading(true));
       try {
         const { user, accessToken } = await authApi.login(data);
         dispatch(setCredentials({ user, accessToken }));
         toast.success(`Welcome back, ${user.username}!`);
-        navigate("/problems");
+        navigate(options.redirectTo || "/problems");
       } catch (err) {
         const message = err.response?.data?.error?.message || "Login failed";
         dispatch(setAuthError(message));

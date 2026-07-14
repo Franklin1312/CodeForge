@@ -81,8 +81,6 @@ const userSchema = new mongoose.Schema(
 );
 
 // ─── Indexes ──────────────────────────────────────────────────────
-userSchema.index({ email: 1 }, { unique: true });
-userSchema.index({ username: 1 }, { unique: true });
 userSchema.index({ "oauthProviders.provider": 1, "oauthProviders.providerId": 1 });
 userSchema.index({ "stats.score": -1 }); // leaderboard
 
