@@ -202,6 +202,7 @@ export const selectListStatus     = (s) => s.problems.listStatus;
 export const selectListError      = (s) => s.problems.listError;
 export const selectCurrentProblem = (s) => s.problems.currentProblem;
 export const selectDetailStatus   = (s) => s.problems.detailStatus;
+export const selectDetailError    = (s) => s.problems.detailError;
 export const selectMutationStatus = (s) => s.problems.mutationStatus;
 export const selectMutationError  = (s) => s.problems.mutationError;
 

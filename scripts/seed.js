@@ -16,7 +16,13 @@ const userSchema = new mongoose.Schema({
   role: { type: String, default: "user" },
   isActive: { type: Boolean, default: true },
   isEmailVerified: { type: Boolean, default: true },
-  stats: { solved: 0, attempted: 0, submissions: 0, score: 0, streak: 0 },
+  stats: {
+    solved: { type: Number, default: 0 },
+    attempted: { type: Number, default: 0 },
+    submissions: { type: Number, default: 0 },
+    score: { type: Number, default: 0 },
+    streak: { type: Number, default: 0 },
+  },
 }, { timestamps: true });
 const User = mongoose.model("User", userSchema);
 
@@ -25,7 +31,11 @@ const problemSchema = new mongoose.Schema({
   constraints: String, examples: Array, testCases: Array, tags: Array,
   allowedLanguages: Array, timeLimit: Number, memoryLimit: Number,
   starterCode: Map, isPublished: Boolean, isPremium: Boolean,
-  stats: { totalSubmissions: 0, acceptedSubmissions: 0, acceptanceRate: 0 },
+  stats: {
+    totalSubmissions: { type: Number, default: 0 },
+    acceptedSubmissions: { type: Number, default: 0 },
+    acceptanceRate: { type: Number, default: 0 },
+  },
 }, { timestamps: true });
 const Problem = mongoose.model("Problem", problemSchema);
 

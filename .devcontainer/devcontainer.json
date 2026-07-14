@@ -1,0 +1,65 @@
+{
+  "name": "CodeForge OJ",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-20-bullseye",
+
+  // ── Features ──────────────────────────────────────────────────────
+  "features": {
+    // Full Docker-in-Docker support (lets you run docker & docker compose)
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "moby": true,
+      "dockerDashComposeVersion": "v2"
+    },
+    // Redis (runs as a service inside the container)
+    "ghcr.io/itsmechlark/features/redis:1": {}
+  },
+
+  // ── Port forwarding ────────────────────────────────────────────────
+  "forwardPorts": [3000, 5173, 8081, 8082],
+  "portsAttributes": {
+    "3000": { "label": "Backend API",        "onAutoForward": "notify" },
+    "5173": { "label": "Frontend (Vite)",    "onAutoForward": "openBrowser" },
+    "8081": { "label": "Mongo Express",      "onAutoForward": "notify" },
+    "8082": { "label": "Redis Commander",    "onAutoForward": "notify" }
+  },
+
+  // ── Lifecycle scripts ──────────────────────────────────────────────
+  "onCreateCommand": "npm install && npm install --prefix backend && npm install --prefix frontend",
+
+  "postCreateCommand": {
+    // Pull all judge language images in the background (large, takes a few minutes)
+    "pull-judge-images": "bash scripts/pull-judge-images.sh || true",
+    // Seed the database (uses MONGODB_URI from .env)
+    "seed-db": "node scripts/seed.js || true"
+  },
+
+  "postStartCommand": "redis-server --daemonize yes --appendonly yes 2>/dev/null || true",
+
+  // ── VS Code settings ───────────────────────────────────────────────
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "PKief.material-icon-theme",
+        "rangav.vscode-thunder-client",
+        "ms-azuretools.vscode-docker",
+        "MongoDB.mongodb-vscode"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.tabSize": 2
+      }
+    }
+  },
+
+  // ── Env vars ───────────────────────────────────────────────────────
+  // These are the defaults; override in Codespaces secrets for real values
+  "remoteEnv": {
+    "REDIS_URL": "redis://localhost:6379",
+    "REDIS_MOCK": "false",
+    "JUDGE_MOCK": "false",
+    "NODE_ENV": "development"
+  }
+}
