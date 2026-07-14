@@ -1,7 +1,7 @@
 import fetch from "node-fetch";
 import { getRedis } from "../config/redis.js";
 import {
-  AI_MODELS, DAILY_LIMITS, OPENROUTER_BASE_URL, getModelForFeature,
+  AI_MODELS, DAILY_LIMITS, OPENROUTER_BASE_URL, getModelForFeature, FALLBACK_CHAIN,
 } from "../config/aiModels.js";
 import {
   SYSTEM_PROMPTS,
@@ -86,14 +86,22 @@ async function* streamFromOpenRouter({ model, systemPrompt, messages, maxTokens 
     throw new AppError(`OpenRouter unreachable: ${err.message}`, 503, "AI_UNAVAILABLE");
   }
 
-  // Handle 429 from OpenRouter — rotate to fallback model
+  // Handle 429 — rate limited, rotate to next model
   if (response.status === 429) {
     throw new AppError("OpenRouter rate limit hit", 429, "AI_RATE_LIMITED");
   }
 
+  // Handle 404 — model no longer available for free, skip to next
+  if (response.status === 404) {
+    const errText = await response.text().catch(() => "");
+    throw new AppError(`Model unavailable: ${model}`, 404, "AI_MODEL_UNAVAILABLE");
+  }
+
   if (!response.ok) {
-    const errText = await response.text().catch(() => "unknown error");
-    throw new AppError(`OpenRouter error ${response.status}: ${errText}`, 502, "AI_ERROR");
+    const errText = await response.text().catch(() => "(could not read body)");
+    const msg = `OpenRouter error ${response.status} for model ${model}: ${errText}`;
+    logger.error(msg);
+    throw new AppError(msg, 502, "AI_ERROR");
   }
 
   // Parse SSE stream
@@ -132,43 +140,49 @@ async function streamToResponse({ res, feature, messages, systemPrompt, modelCon
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
 
+  // Find starting position in the fallback chain for this feature's preferred model
+  const startIdx = FALLBACK_CHAIN.findIndex((m) => m.id === modelConfig.id);
+  // If not found (shouldn't happen), start at 0
+  const chainStart = startIdx >= 0 ? startIdx : 0;
+
   try {
-    // Try primary model, fall back to fallback model on 429
-    let stream;
-    try {
-      stream = streamFromOpenRouter({
-        model:        modelConfig.id,
-        systemPrompt,
-        messages,
-        maxTokens:    modelConfig.maxTokens,
-      });
-    } catch (err) {
-      if (err.code === "AI_RATE_LIMITED") {
-        usedModel = AI_MODELS.fallback.id;
-        stream = streamFromOpenRouter({
-          model:        AI_MODELS.fallback.id,
+    let succeeded = false;
+
+    for (let i = chainStart; i < FALLBACK_CHAIN.length; i++) {
+      const model = FALLBACK_CHAIN[i];
+      usedModel = model.id;
+
+      try {
+        for await (const chunk of streamFromOpenRouter({
+          model:        model.id,
           systemPrompt,
           messages,
-          maxTokens:    AI_MODELS.fallback.maxTokens,
-        });
-        logger.warn(`Rotated to fallback model for ${feature}`);
-      } else {
-        throw err;
+          maxTokens:    model.maxTokens,
+        })) {
+          send({ type: "chunk", content: chunk });
+          totalTokens += Math.ceil(chunk.length / 4);
+        }
+        succeeded = true;
+        break; // Stream completed — stop chain
+      } catch (err) {
+        const isSkippable = (err.code === "AI_RATE_LIMITED" || err.code === "AI_MODEL_UNAVAILABLE");
+        if (isSkippable && i < FALLBACK_CHAIN.length - 1) {
+          logger.warn(`Model ${model.id} unavailable for ${feature} (${err.code}), trying next model…`);
+          continue; // Try next model in chain
+        }
+        throw err; // Fatal error or chain exhausted — re-throw
       }
     }
 
-    for await (const chunk of stream) {
-      send({ type: "chunk", content: chunk });
-      totalTokens += Math.ceil(chunk.length / 4); // rough token estimate
+    if (succeeded) {
+      send({ type: "done", model: usedModel, tokensUsed: totalTokens });
     }
 
-    send({ type: "done", model: usedModel, tokensUsed: totalTokens });
-
   } catch (err) {
-    logger.error(`AI stream error (${feature}):`, err.message);
-    send({ type: "error", message: err.message || "AI request failed" });
+    const errMsg = err.message || err.code || String(err) || "Unknown AI error";
+    logger.error(`AI stream error (${feature}): ${errMsg}`, { code: err.code, status: err.statusCode });
+    send({ type: "error", message: errMsg });
   } finally {
-    // Log usage async
     logAiUsage({ userId, problemId, feature, model: usedModel, tokensUsed: totalTokens }).catch(() => {});
     res.end();
   }

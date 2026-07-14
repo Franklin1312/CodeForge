@@ -1,54 +1,57 @@
 /**
- * AI Model Registry — OpenRouter free models (July 2026)
+ * AI Model Registry — OpenRouter free models (verified working)
  *
- * Primary:  qwen/qwen3-coder:free  — best free coding model, 1M context
- * Fast:     cohere/north-mini-code:free — fastest (69 tok/s), great for quick hints
- * Deep:     openai/gpt-oss-120b:free — deepest reasoning, complex analysis
- * Fallback: meta-llama/llama-3.3-70b:free — reliable, always available
- *
- * Rate limits (free tier): 20 req/min, 200 req/day across ALL free models.
- * Our per-user daily cap prevents hitting OpenRouter's limits.
+ * Models are tried in FALLBACK_CHAIN order when rate-limited (429).
+ * The chain ends with openrouter/auto which lets OpenRouter pick
+ * any available free model automatically.
  */
 
 export const AI_MODELS = {
-  // Best overall free coder — used for hints, review, editorial
   primary: {
-    id:          "qwen/qwen3-coder:free",
-    label:       "Qwen3 Coder",
+    id:            "qwen/qwen3-coder:free",
+    label:         "Qwen3 Coder",
     contextWindow: 1_000_000,
-    maxTokens:   4096,
-    bestFor:     ["hint", "review", "explain", "editorial"],
+    maxTokens:     4096,
   },
-
-  // Fastest — used for quick complexity analysis and short responses
   fast: {
-    id:          "cohere/north-mini-code:free",
-    label:       "North Mini Code",
-    contextWindow: 256_000,
-    maxTokens:   2048,
-    bestFor:     ["complexity", "quick_hint"],
+    id:            "google/gemma-3-12b-it:free",
+    label:         "Gemma 3 12B",
+    contextWindow: 131_072,
+    maxTokens:     2048,
   },
-
-  // Deepest reasoning — used for post-solve optimal solution
   deep: {
-    id:          "openai/gpt-oss-120b:free",
-    label:       "GPT-OSS 120B",
-    contextWindow: 128_000,
-    maxTokens:   8192,
-    bestFor:     ["optimal", "debug", "learning_path"],
+    id:            "deepseek/deepseek-r1:free",
+    label:         "DeepSeek R1",
+    contextWindow: 164_000,
+    maxTokens:     8192,
   },
-
-  // Always-on fallback — rotate to if primary returns 429/503
   fallback: {
-    id:          "meta-llama/llama-3.3-70b:free",
-    label:       "Llama 3.3 70B",
+    id:            "meta-llama/llama-3.3-70b-instruct:free",
+    label:         "Llama 3.3 70B",
     contextWindow: 128_000,
-    maxTokens:   4096,
-    bestFor:     ["fallback"],
+    maxTokens:     4096,
+  },
+  fallback2: {
+    id:            "google/gemma-3-27b-it:free",
+    label:         "Gemma 3 27B",
+    contextWindow: 131_072,
+    maxTokens:     4096,
+  },
+  fallback3: {
+    id:            "mistralai/mistral-7b-instruct:free",
+    label:         "Mistral 7B",
+    contextWindow: 32_768,
+    maxTokens:     4096,
+  },
+  auto: {
+    id:            "openrouter/auto",
+    label:         "Auto (any free model)",
+    contextWindow: 128_000,
+    maxTokens:     4096,
   },
 };
 
-// Feature → model mapping
+// Feature → preferred starting model
 export const FEATURE_MODEL_MAP = {
   hint:          "primary",
   complexity:    "fast",
@@ -60,6 +63,18 @@ export const FEATURE_MODEL_MAP = {
   quick_hint:    "fast",
   chat:          "primary",
 };
+
+// Ordered fallback chain — tried in sequence on 429
+// Each feature starts at its preferred model index in this chain
+export const FALLBACK_CHAIN = [
+  AI_MODELS.primary,
+  AI_MODELS.fast,
+  AI_MODELS.deep,
+  AI_MODELS.fallback,
+  AI_MODELS.fallback2,
+  AI_MODELS.fallback3,
+  AI_MODELS.auto,
+];
 
 export function getModelForFeature(feature) {
   const key = FEATURE_MODEL_MAP[feature] || "primary";

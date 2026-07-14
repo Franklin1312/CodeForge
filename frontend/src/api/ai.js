@@ -1,6 +1,35 @@
 import { store } from "../store/index.js";
+import { refreshAccessToken, clearCredentials } from "../store/slices/authSlice.js";
+import { refreshSession } from "./client.js";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "/api";
+
+// ─── Ensure a fresh token before streaming ────────────────────────
+// Decodes the JWT expiry without a library and proactively refreshes
+// if it expires within the next 30 seconds.
+async function getFreshToken() {
+  const { accessToken } = store.getState().auth;
+  if (!accessToken) return null;
+
+  try {
+    // Decode the JWT payload (base64url, middle part)
+    const payload = JSON.parse(atob(accessToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    const expiresAt = payload.exp * 1000; // convert to ms
+    const isExpiredOrSoon = Date.now() > expiresAt - 30_000; // refresh 30s early
+
+    if (isExpiredOrSoon) {
+      const { accessToken: newToken } = await refreshSession();
+      store.dispatch(refreshAccessToken({ accessToken: newToken }));
+      return newToken;
+    }
+  } catch {
+    // Token unreadable or refresh failed — clear credentials
+    store.dispatch(clearCredentials());
+    return null;
+  }
+
+  return accessToken;
+}
 
 /**
  * Stream an AI response via SSE (Server-Sent Events).
@@ -14,7 +43,7 @@ const BASE_URL = import.meta.env.VITE_API_URL || "/api";
  * Throws on error events from the server.
  */
 export async function* streamAI(endpoint, body) {
-  const token = store.getState().auth.accessToken;
+  const token = await getFreshToken();
 
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     method:  "POST",
@@ -64,6 +93,7 @@ export async function* streamAI(endpoint, body) {
   }
 }
 
+
 /**
  * Collect the full streamed response into a string.
  * Use this when you don't need to show streaming.
@@ -80,7 +110,7 @@ export async function callAI(endpoint, body) {
  * Fetch AI usage stats for the current user.
  */
 export async function getAiUsage() {
-  const token = store.getState().auth.accessToken;
+  const token = await getFreshToken();
   const res = await fetch(`${BASE_URL}/ai/usage`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     credentials: "include",

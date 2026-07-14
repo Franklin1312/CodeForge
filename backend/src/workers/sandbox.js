@@ -26,6 +26,7 @@ function spawnDocker({ image, workDir, cmd, stdinData, timeoutMs, containerName 
     const args = [
       "run",
       "--rm",
+      "-i",                          // attach stdin so the process can read it
 
       // ── Identity ──────────────────────────────────────────────
       "--user=65534:65534",          // nobody:nogroup — non-root
@@ -59,8 +60,9 @@ function spawnDocker({ image, workDir, cmd, stdinData, timeoutMs, containerName 
       `--label=codeforge.submission=${containerName}`,
 
       // ── Code volume (read-only) ───────────────────────────────
-      `-v=${workDir}:/code:ro,noexec`,
+      `-v=${workDir}:/code:ro`,
       "--workdir=/code",
+
 
       // ── Hostname spoofing (aesthetics) ────────────────────────
       "--hostname=judge",
@@ -170,11 +172,14 @@ async function executeTestCase({ image, workDir, runCmd, stdinData, timeLimitMs,
     workDir,
     cmd: runCmd,
     stdinData,
-    timeoutMs: timeLimitMs + 2000,  // 2s grace above problem limit
+    timeoutMs: timeLimitMs + 3000,  // 3s grace: 1s for Docker startup + 2s buffer
     containerName,
   });
 
-  result.wallMs = Date.now() - start;
+  // Subtract Docker container startup overhead (~300ms) so we measure
+  // the code's runtime, not container launch time.
+  const rawMs = Date.now() - start;
+  result.wallMs = Math.max(0, rawMs - 300);
   return result;
 }
 
@@ -214,9 +219,12 @@ export async function runInSandbox({ code, language, testCases, timeLimit, memor
 
   try {
     await fs.mkdir(workDir, { recursive: true });
+    // Set world-readable so Docker's nobody user (65534) can read mounted files
+    await fs.chmod(workDir, 0o755);
 
-    // Write source file
-    await fs.writeFile(path.join(workDir, lang.filename), code, { encoding: "utf8", mode: 0o444 });
+    // Write source file with world-read permission
+    await fs.writeFile(path.join(workDir, lang.filename), code, { encoding: "utf8", mode: 0o644 });
+
 
     // ── Compile (if needed) ───────────────────────────────────
     if (lang.compileCmd) {
