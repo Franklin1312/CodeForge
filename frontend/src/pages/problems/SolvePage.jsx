@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import Editor from "@monaco-editor/react";
+import { store } from "../../store/index.js";
 
 import {
   fetchProblemBySlug, clearCurrentProblem,
@@ -51,10 +52,14 @@ export default function SolvePage() {
   const submission   = useSelector(selectActiveSubmission);
   const activeStatus = useSelector(selectActiveStatus);
 
-  const [language,   setLanguage]   = useState("python");
-  const [code,       setCode]       = useState("");
-  const [leftTab,    setLeftTab]    = useState("description");
-  const [showAi,     setShowAi]     = useState(false);
+  const [language,     setLanguage]     = useState("python");
+  const [code,         setCode]         = useState("");
+  const [leftTab,      setLeftTab]      = useState("description");
+  const [showAi,       setShowAi]       = useState(false);
+  const [showCustom,   setShowCustom]   = useState(false);
+  const [customInput,  setCustomInput]  = useState("");
+  const [runResult,    setRunResult]    = useState(null);   // { stdout, stderr, verdict, runtime, compileError }
+  const [isRunning,    setIsRunning]    = useState(false);
   const editorRef = useRef(null);
   const saveTimer = useRef(null);
 
@@ -92,6 +97,27 @@ export default function SolvePage() {
       toast.success("Submitted — waiting for judge…");
     }
   }, [dispatch, problem, language, code]);
+
+  const handleRun = useCallback(async () => {
+    if (!code.trim()) { toast.error("Write some code first!"); return; }
+    setIsRunning(true);
+    setRunResult(null);
+    try {
+      const res = await fetch("/api/submissions/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${store.getState().auth.accessToken}` },
+        credentials: "include",
+        body: JSON.stringify({ language, code, stdin: customInput }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message || "Run failed");
+      setRunResult(data);
+    } catch (err) {
+      toast.error(err.message || "Run failed");
+    } finally {
+      setIsRunning(false);
+    }
+  }, [language, code, customInput]);
 
   useEffect(() => {
     function onKey(e) {
@@ -180,6 +206,16 @@ export default function SolvePage() {
           <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
             <span style={{ fontSize:"11px", color:"var(--text-muted)" }}>⌘↵</span>
             <button
+              onClick={() => { setShowCustom((v) => !v); setRunResult(null); }}
+              style={{
+                padding:"6px 12px", borderRadius:"6px", fontSize:"12px", fontWeight:600,
+                border:"1px solid", cursor:"pointer", transition:"all 150ms",
+                borderColor: showCustom ? "#f59e0b" : "var(--surface-border)",
+                background:  showCustom ? "rgba(245,158,11,0.1)" : "transparent",
+                color:       showCustom ? "#f59e0b" : "var(--text-muted)",
+              }}
+            >⚡ Run</button>
+            <button
               onClick={() => setShowAi((v) => !v)}
               style={{
                 padding:"6px 12px", borderRadius:"6px", fontSize:"12px", fontWeight:600,
@@ -213,6 +249,56 @@ export default function SolvePage() {
             }}
           />
         </div>
+
+        {/* Custom input panel */}
+        {showCustom && (
+          <div style={{ borderTop:"1px solid var(--surface-border)", background:"var(--surface-1)", flexShrink:0, padding:"12px 14px", display:"flex", flexDirection:"column", gap:"8px", maxHeight:"280px" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <span style={{ fontSize:"12px", fontWeight:600, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.05em" }}>Custom Input</span>
+              <Button onClick={handleRun} isLoading={isRunning} disabled={isRunning} size="sm"
+                style={{ background:"#f59e0b", color:"#000", fontWeight:700 }}
+              >{isRunning ? "Running…" : "▶ Run"}</Button>
+            </div>
+            <textarea
+              value={customInput}
+              onChange={(e) => setCustomInput(e.target.value)}
+              placeholder="Enter custom stdin here… (e.g. 3 2 4\n6)"
+              rows={3}
+              style={{
+                width:"100%", resize:"vertical", background:"var(--surface-base)",
+                border:"1px solid var(--surface-border)", borderRadius:"6px",
+                color:"var(--text-primary)", fontFamily:"var(--font-mono)", fontSize:"12px",
+                padding:"8px", outline:"none", boxSizing:"border-box",
+              }}
+            />
+            {runResult && (
+              <div style={{ borderTop:"1px solid var(--surface-border)", paddingTop:"8px" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"6px" }}>
+                  <span style={{ fontSize:"11px", fontWeight:700, padding:"2px 8px", borderRadius:"4px",
+                    background: (runResult.verdict==="AC"||runResult.verdict==="OK") ? "rgba(0,230,118,0.15)" : "rgba(255,23,68,0.15)",
+                    color: (runResult.verdict==="AC"||runResult.verdict==="OK") ? "#00e676" : "#ff1744",
+                  }}>{runResult.verdict === "OK" ? "✓ Ran OK" : runResult.verdict}</span>
+                  <span style={{ fontSize:"11px", color:"var(--text-muted)" }}>{runResult.runtime}ms</span>
+                </div>
+                {runResult.compileError && (
+                  <pre style={{ margin:0, fontSize:"11px", color:"#ff6d00", fontFamily:"var(--font-mono)", whiteSpace:"pre-wrap", maxHeight:"80px", overflowY:"auto" }}>{runResult.compileError}</pre>
+                )}
+                {runResult.stdout && (
+                  <div>
+                    <span style={{ fontSize:"11px", color:"var(--text-muted)", display:"block", marginBottom:"2px" }}>Output:</span>
+                    <pre style={{ margin:0, fontSize:"12px", color:"var(--text-primary)", fontFamily:"var(--font-mono)", whiteSpace:"pre-wrap", background:"var(--surface-base)", padding:"6px 8px", borderRadius:"4px", maxHeight:"80px", overflowY:"auto" }}>{runResult.stdout}</pre>
+                  </div>
+                )}
+                {runResult.stderr && !runResult.compileError && (
+                  <div>
+                    <span style={{ fontSize:"11px", color:"var(--text-muted)", display:"block", marginBottom:"2px" }}>Stderr:</span>
+                    <pre style={{ margin:0, fontSize:"11px", color:"#ff6d00", fontFamily:"var(--font-mono)", whiteSpace:"pre-wrap", maxHeight:"60px", overflowY:"auto" }}>{runResult.stderr}</pre>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Verdict + mock banner */}
         {activeStatus !== "idle" && (
